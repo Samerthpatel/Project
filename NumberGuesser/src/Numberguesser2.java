@@ -1,7 +1,7 @@
 import java.util.Random;
 import java.util.Scanner;
 
-public class Numberguesser1 {
+public class Numberguesser2 {
 	public static void main(String[] args) {
 		// there's a lot of repeated code and it's not the cleanest. We'll see later how
 		// to improve this
@@ -43,8 +43,13 @@ public class Numberguesser1 {
 						number = new Random().nextInt(range) + 1;
 					} else {
 						System.out.println("That's wrong");
-						System.out.println("Number of stricks remaining:" + (4 - strikes));
 						strikes++;
+						if (guess > number) {
+							System.out.println("The number you guessed is higher than what I picked");
+						}
+						if (guess < number) {
+							System.out.println("The number you guessed is less then what I picked");
+						}
 						if (strikes >= maxStrikes) {
 							System.out.println("Uh oh, looks like you need to get some more practice.");
 							strikes = 0;
