@@ -1,6 +1,7 @@
 package server;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
@@ -8,7 +9,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class Room implements AutoCloseable {
-	private static SocketServer server;// used to refer to accessible server functions
+	private static SocketServer server; // used to refer to accessible server functions
 	private String name;
 	private final static Logger log = Logger.getLogger(Room.class.getName());
 	private Random generator = new Random();
@@ -19,6 +20,7 @@ public class Room implements AutoCloseable {
 	private final static String JOIN_ROOM = "joinroom";
 	private final static String ROLL = "roll";
 	private final static String FLIP = "flip";
+	private final static String COLOR = "color";
 
 	public Room(String name) {
 		this.name = name;
@@ -53,7 +55,7 @@ public class Room implements AutoCloseable {
 		while (iter.hasNext()) {
 			ServerThread c = iter.next();
 			if (c != client) {
-				boolean messageSent = client.sendConnectionStatus(c.getClientName(), true, null);
+				client.sendConnectionStatus(c.getClientName(), true, null);
 			}
 		}
 	}
@@ -86,8 +88,31 @@ public class Room implements AutoCloseable {
 		server.joinRoom(room, client);
 	}
 
+	protected void createRoom(String room, ServerThread client) {
+		if (server.createNewRoom(room)) {
+			joinRoom(room, client);
+		}
+	}
+
 	protected void joinLobby(ServerThread client) {
 		server.joinLobby(client);
+	}
+
+	// Function to process bold, italics, and underline
+	private String textEffects(String message) {
+		// Bold
+		if (message.contains("-")) {
+			message = message.replaceAll("\\-\\b", "<b>").replaceAll("\\b\\-", "</b>");
+		}
+		// Italics
+		if (message.contains("*")) {
+			message = message.replaceAll("\\*\\b", "<i>").replaceAll("\\b\\*", "</i>");
+		}
+		// Underline
+		if (message.contains("_")) {
+			message = message.replaceAll("\\b_", "<u>").replaceAll("_\\b", "</u>");
+		}
+		return message;
 	}
 
 	/***
@@ -97,8 +122,9 @@ public class Room implements AutoCloseable {
 	 * @param client  The sender of the message (since they'll be the ones
 	 *                triggering the actions)
 	 */
-	private boolean processCommands(String message, ServerThread client) {
-		boolean wasCommand = false;
+	private String processCommands(String message, ServerThread client) {
+		// boolean wasCommand = false;
+		String response = null;
 		try {
 			if (message.indexOf(COMMAND_TRIGGER) > -1) {
 				String[] comm = message.split(COMMAND_TRIGGER);
@@ -116,28 +142,40 @@ public class Room implements AutoCloseable {
 					if (server.createNewRoom(roomName)) {
 						joinRoom(roomName, client);
 					}
-					wasCommand = true;
+					// wasCommand = true;
 					break;
 				case JOIN_ROOM:
 					roomName = comm2[1];
 					joinRoom(roomName, client);
-					wasCommand = true;
+					// wasCommand = true;
 					break;
 				case ROLL:
-					sendMessage(client, "rolled " + Integer.toString(generator.nextInt(6) + 1));
-					wasCommand = true;
+					response = "<i><b style=\"color: red;\">Rolled: </b></i>"
+							+ Integer.toString(generator.nextInt(6) + 1);
+					// wasCommand = true;
 					break;
 				case FLIP:
 					String[] coin = { "Heads", "Tails" };
-					sendMessage(client, "flipped " + coin[generator.nextInt(coin.length)]);
-					wasCommand = true;
+					response = "<i><b style=\"color: green;\">Flipped: </b></i>" + coin[generator.nextInt(coin.length)];
+					// wasCommand = true;
+					break;
+				case COLOR:
+					response = "<span style=\"color: " + comm2[1] + ";\">"
+							+ textEffects(String.join(" ", Arrays.copyOfRange(comm2, 2, comm2.length))) + "</span>";
+					// wasCommand = true;
+					break;
+				default:
+					response = textEffects(message);
 					break;
 				}
+			} else {
+				response = textEffects(message);
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		return wasCommand;
+		// return wasCommand;
+		return response;
 	}
 
 	// TODO changed from string to ServerThread
@@ -163,10 +201,12 @@ public class Room implements AutoCloseable {
 	 */
 	protected void sendMessage(ServerThread sender, String message) {
 		log.log(Level.INFO, getName() + ": Sending message to " + clients.size() + " clients");
-		if (processCommands(message, sender)) {
+		String response = processCommands(message, sender);
+		if (response == null) {
 			// it was a command, don't broadcast
 			return;
 		}
+		message = response;
 		Iterator<ServerThread> iter = clients.iterator();
 		while (iter.hasNext()) {
 			ServerThread client = iter.next();
@@ -176,6 +216,10 @@ public class Room implements AutoCloseable {
 				log.log(Level.INFO, "Removed client " + client.getId());
 			}
 		}
+	}
+
+	public List<String> getRooms(String room) {
+		return server.getRooms(room);
 	}
 
 	/***
