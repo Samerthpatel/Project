@@ -214,6 +214,8 @@ public class ClientUI extends JFrame implements Event {
 		JEditorPane entry = new JEditorPane();
 		entry.setEditable(false);
 		// entry.setLayout(null);
+		// TODO: Add security for XSS attempts
+		entry.setContentType("text/html");
 		entry.setText(str);
 		Dimension d = new Dimension(textArea.getSize().width, calcHeightForText(str));
 		// attempt to lock all dimensions
