@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -14,10 +16,15 @@ public class ServerThread extends Thread {
 	private boolean isRunning = false;
 	private Room currentRoom;// what room we are in, should be lobby by default
 	private String clientName;
+	List<String> muted = new ArrayList<String>();
 	private final static Logger log = Logger.getLogger(ServerThread.class.getName());
 
 	public String getClientName() {
 		return clientName;
+	}
+
+	public boolean isMuted(String username) {
+		return muted.contains(username);
 	}
 
 	protected synchronized Room getCurrentRoom() {
