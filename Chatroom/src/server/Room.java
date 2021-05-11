@@ -41,6 +41,7 @@ public class Room implements AutoCloseable {
 
 	protected synchronized void addClient(ServerThread client) {
 		client.setCurrentRoom(this);
+		client.loadMutedUsers();
 		if (clients.indexOf(client) > -1) {
 			log.log(Level.INFO, "Attempting to add a client that already exists");
 		} else {
@@ -169,32 +170,24 @@ public class Room implements AutoCloseable {
 					break;
 				case MUTE:
 					String username_mute = comm2[1].split(AT_SYMBOL)[1];
-					if (username_mute.equals(client.getClientName())) {
-						sendPrivateMessage(client, client.getClientName(), "<b><i>You cannot mute yourself!</i></b>",
-								false);
-						break;
-					}
 					if (username_mute != null) {
 						username_mute = username_mute.toLowerCase();
 					}
-					if (!client.muted.contains(username_mute)) {
+					if (!client.isMuted(username_mute)) {
 						client.muted.add(username_mute);
+						client.saveMutedUsers();
 						sendPrivateMessage(client, username_mute, "<i>muted you.</i>", false);
 					}
 					// wasCommand = true;
 					break;
 				case UNMUTE:
 					String username_unmute = comm2[1].split(AT_SYMBOL)[1];
-					if (username_unmute.equals(client.getClientName())) {
-						sendPrivateMessage(client, client.getClientName(), "<b><i>You cannot unmute yourself!</i></b>",
-								false);
-						break;
-					}
 					if (username_unmute != null) {
 						username_unmute = username_unmute.toLowerCase();
 					}
-					if (client.muted.contains(username_unmute)) {
+					if (client.isMuted(username_unmute)) {
 						client.muted.remove(username_unmute);
+						client.saveMutedUsers();
 						sendPrivateMessage(client, username_unmute, "<i>unmuted you.</i>", false);
 					}
 					// wasCommand = true;
