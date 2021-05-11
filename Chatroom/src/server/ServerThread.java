@@ -1,9 +1,12 @@
 package server;
 
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
@@ -25,6 +28,31 @@ public class ServerThread extends Thread {
 
 	public boolean isMuted(String username) {
 		return muted.contains(username);
+	}
+
+	public void saveMutedUsers() {
+		try (FileWriter f = new FileWriter(getClientName() + "_muted.txt")) {
+			for (String user : muted) {
+				f.write(user + ",");
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+
+	public void loadMutedUsers() {
+		Path fileName = Path.of(getClientName() + "_muted.txt");
+		try {
+			String file = Files.readString(fileName);
+			String[] users = file.split(",");
+			for (String user : users) {
+				if (!isMuted(user) && user.length() != 0) {
+					muted.add(user);
+				}
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 	}
 
 	protected synchronized Room getCurrentRoom() {
